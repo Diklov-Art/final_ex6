@@ -3,7 +3,7 @@ package service
 import (
 	"strings"
 
-	"github.com/Yandex-Practicum/go1fl-sprint6-final/morse-converter/pkg/morse"
+	"github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 )
 
 // Определяет, является ли строка кодом Морзе

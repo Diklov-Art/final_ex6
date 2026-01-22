@@ -24,9 +24,6 @@ func New(logger *log.Logger) *Server {
 	router.HandleFunc("/", handlers.HomeHandler)
 	router.HandleFunc("/upload", handlers.UploadHandler)
 
-	// Настраиваем статические файлы (если нужно)
-	// router.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-
 	// Создаем HTTP сервер
 	httpServer := &http.Server{
 		Addr:         ":8080",

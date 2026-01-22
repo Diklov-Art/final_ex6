@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"your-project-path/service"
+
+	"github.com/Yandex-Practicum/go1fl-sprint6-final/internal/service"
 )
 
 // HomeHandler обрабатывает корневой эндпоинт и возвращает HTML форму
@@ -36,7 +37,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Пробуем получить файл через multipart/form-data
 	if r.Header.Get("Content-Type") == "multipart/form-data" {
-		err = r.ParseMultipartForm(10 << 20) // 10 MB максимум
+		err = r.ParseMultipartForm(10 << 20)
 		if err != nil {
 			http.Error(w, "Failed to parse form", http.StatusInternalServerError)
 			return
