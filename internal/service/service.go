@@ -12,27 +12,16 @@ func isMorseCode(s string) bool {
     if trimmed == "" {
         return false
     }
-
-    // Используем strings.ContainsFunc как указано в ТЗ
-    // Проверяем, содержит ли строка символы, которые НЕ являются допустимыми для кода Морзе
-    if strings.ContainsFunc(trimmed, func(r rune) bool {
-        // Допустимые символы в коде Морзе: точка, тире, пробел, слэш
-        return !(r == '.' || r == '-' || r == ' ' || r == '/' || r == '\t' || r == '\n')
-    }) {
-        return false
-    }
     
-    // Также проверяем, что строка содержит хотя бы одну точку или тире
-    // (иначе строка из одних пробелов будет считаться кодом Морзе)
-    hasDotsOrDashes := false
+    // Простая эвристика: если первый непробельный символ - точка или тире
     for _, r := range trimmed {
-        if r == '.' || r == '-' {
-            hasDotsOrDashes = true
-            break
+        if r == ' ' || r == '\t' || r == '\n' {
+            continue
         }
+        return r == '.' || r == '-'
     }
     
-    return hasDotsOrDashes
+    return false
 }
 
 // Convert автоматически определяет тип строки и конвертирует ее
