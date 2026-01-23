@@ -34,81 +34,80 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     var content []byte
-    var filename string
     var err error
 
-    // Проверяем, multipart ли это (форма с файлом из браузера)
-    if strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
-        // Парсим html-форму
-        err = r.ParseMultipartForm(10 << 20) // 10MB максимум
-        if err != nil {
-            http.Error(w, "Failed to parse form", http.StatusInternalServerError)
-            return
-        }
-
-        // Получаем файл из формы
+    // Сначала пытаемся прочитать как multipart форму
+    err = r.ParseMultipartForm(10 << 20)
+    if err == nil {
+        // Это multipart форма
         file, header, err := r.FormFile("file")
         if err != nil {
-            http.Error(w, "Failed to get file from form", http.StatusInternalServerError)
-            return
+            // Если нет файла, читаем тело
+            content, err = io.ReadAll(r.Body)
+        } else {
+            defer file.Close()
+            content, err = io.ReadAll(file)
+            
+            // Сохраняем оригинальное имя файла для расширения
+            if header != nil {
+                // Используем расширение оригинального файла
+                ext := filepath.Ext(header.Filename)
+                if ext == "" {
+                    ext = ".txt"
+                }
+                
+                // Создаем файл с результатом
+                timestamp := time.Now().UTC().String()
+                safeTimestamp := strings.ReplaceAll(strings.ReplaceAll(timestamp, " ", "_"), ":", "-")
+                outputFilename := "converted_" + safeTimestamp + ext
+                
+                outputFile, err := os.Create(outputFilename)
+                if err == nil {
+                    defer outputFile.Close()
+                    // Конвертируем и записываем
+                    converted, _ := service.Convert(string(content))
+                    outputFile.WriteString(converted)
+                    
+                    // Возвращаем результат
+                    w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+                    w.WriteHeader(http.StatusOK)
+                    w.Write([]byte(converted))
+                    return
+                }
+            }
         }
-        defer file.Close()
-
-        // Прочитать данные из файла
-        content, err = io.ReadAll(file)
-        if err != nil {
-            http.Error(w, "Failed to read file", http.StatusInternalServerError)
-            return
-        }
-        
-        filename = header.Filename
     } else {
-        // Если не multipart (тесты отправляют текст напрямую)
-        // Читаем тело запроса напрямую
+        // Если не multipart, читаем тело запроса
         content, err = io.ReadAll(r.Body)
-        if err != nil {
-            http.Error(w, "Failed to read request body", http.StatusInternalServerError)
-            return
-        }
-        defer r.Body.Close()
-        
-        // Для тестов используем дефолтное имя файла
-        filename = "input.txt"
     }
-
-    // Передать эти данные в функцию автоопределения
+    
+    if err != nil {
+        http.Error(w, "Failed to read content", http.StatusInternalServerError)
+        return
+    }
+    
+    // Конвертируем
     converted, err := service.Convert(string(content))
     if err != nil {
         http.Error(w, "Failed to convert content", http.StatusInternalServerError)
         return
     }
-
-    // Создать локальный файл
-    timestamp := time.Now().UTC().String()
-    ext := filepath.Ext(filename)
-    if ext == "" {
-        ext = ".txt"
-    }
     
-    // Очищаем timestamp для имени файла
+    // Создаем файл с результатом
+    timestamp := time.Now().UTC().String()
     safeTimestamp := strings.ReplaceAll(strings.ReplaceAll(timestamp, " ", "_"), ":", "-")
-    outputFilename := "converted_" + safeTimestamp + ext
-
-    // Записать в локальный файл результат конвертации
+    outputFilename := "converted_" + safeTimestamp + ".txt"
+    
     outputFile, err := os.Create(outputFilename)
     if err != nil {
         http.Error(w, "Failed to create output file", http.StatusInternalServerError)
         return
     }
     defer outputFile.Close()
-
-    _, err = outputFile.WriteString(converted)
-    if err != nil {
-        http.Error(w, "Failed to write to output file", http.StatusInternalServerError)
-        return
-    }
-
-    // Вернуть результат конвертации строки
+    
+    outputFile.WriteString(converted)
+    
+    // Возвращаем результат
     w.Header().Set("Content-Type", "text/plain; charset=utf-8")
     w.WriteHeader(http.StatusOK)
     w.Write([]byte(converted))
