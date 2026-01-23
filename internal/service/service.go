@@ -14,46 +14,22 @@ func isMorseCode(s string) bool {
         return false
     }
 
-    // Проверяем, содержит ли строка русские буквы
-    hasCyrillic := false
-    for _, r := range trimmed {
-        if unicode.Is(unicode.Cyrillic, r) {
-            hasCyrillic = true
-            break
-        }
-    }
-    
-    // Если есть русские буквы - это текст, не код Морзе
-    if hasCyrillic {
-        return false
-    }
-    
-    // Проверяем, содержит ли строка только допустимые символы Морзе
-    // Код Морзе может содержать: точку, тире, пробел, слэш
-    // Также могут быть цифры, которые кодируются точками и тире
-    
-    // Считаем количество точек и тире
+    // Простая проверка: если больше 50% символов - точки или тире
+    totalChars := len(trimmed)
     dotsAndDashes := 0
-    otherChars := 0
     
     for _, r := range trimmed {
-        switch r {
-        case '.', '-':
+        if r == '.' || r == '-' {
             dotsAndDashes++
-        case ' ', '/', '\t', '\n':
-            // Пробельные символы разрешены
-        default:
-            otherChars++
         }
     }
     
-    // Если есть другие символы (кроме точек, тире и пробелов) - это не код Морзе
-    if otherChars > 0 {
-        return false
+    // Если более 30% символов - точки или тире, считаем что это код Морзе
+    if totalChars > 0 && float64(dotsAndDashes)/float64(totalChars) > 0.3 {
+        return true
     }
     
-    // Если есть хотя бы одна точка или тире - считаем что это код Морзе
-    return dotsAndDashes > 0
+    return false
 }
 
 // Convert автоматически определяет тип строки и конвертирует ее
