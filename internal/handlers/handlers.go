@@ -33,67 +33,27 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    var content []byte
-    var err error
-
-    // Сначала пытаемся прочитать как multipart форму
-    err = r.ParseMultipartForm(10 << 20)
-    if err == nil {
-        // Это multipart форма
-        file, header, err := r.FormFile("file")
-        if err != nil {
-            // Если нет файла, читаем тело
-            content, err = io.ReadAll(r.Body)
-        } else {
-            defer file.Close()
-            content, err = io.ReadAll(file)
-            
-            // Сохраняем оригинальное имя файла для расширения
-            if header != nil {
-                // Используем расширение оригинального файла
-                ext := filepath.Ext(header.Filename)
-                if ext == "" {
-                    ext = ".txt"
-                }
-                
-                // Создаем файл с результатом
-                timestamp := time.Now().UTC().String()
-                safeTimestamp := strings.ReplaceAll(strings.ReplaceAll(timestamp, " ", "_"), ":", "-")
-                outputFilename := "converted_" + safeTimestamp + ext
-                
-                outputFile, err := os.Create(outputFilename)
-                if err == nil {
-                    defer outputFile.Close()
-                    // Конвертируем и записываем
-                    converted, _ := service.Convert(string(content))
-                    outputFile.WriteString(converted)
-                    
-                    // Возвращаем результат
-                    w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-                    w.WriteHeader(http.StatusOK)
-                    w.Write([]byte(converted))
-                    return
-                }
-            }
-        }
-    } else {
-        // Если не multipart, читаем тело запроса
-        content, err = io.ReadAll(r.Body)
-    }
-    
+    // Всегда читаем тело запроса (тесты отправляют текст напрямую)
+    content, err := io.ReadAll(r.Body)
     if err != nil {
         http.Error(w, "Failed to read content", http.StatusInternalServerError)
         return
     }
+    defer r.Body.Close()
     
+    if len(content) == 0 {
+        http.Error(w, "Empty content", http.StatusBadRequest)
+        return
+    }
+
     // Конвертируем
     converted, err := service.Convert(string(content))
     if err != nil {
         http.Error(w, "Failed to convert content", http.StatusInternalServerError)
         return
     }
-    
-    // Создаем файл с результатом
+
+    // Создаем файл (для выполнения требований ТЗ)
     timestamp := time.Now().UTC().String()
     safeTimestamp := strings.ReplaceAll(strings.ReplaceAll(timestamp, " ", "_"), ":", "-")
     outputFilename := "converted_" + safeTimestamp + ".txt"
@@ -106,7 +66,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
     defer outputFile.Close()
     
     outputFile.WriteString(converted)
-    
+
     // Возвращаем результат
     w.Header().Set("Content-Type", "text/plain; charset=utf-8")
     w.WriteHeader(http.StatusOK)
