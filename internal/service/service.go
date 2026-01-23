@@ -2,7 +2,6 @@ package service
 
 import (
     "strings"
-    "unicode"
     
     "github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 )
@@ -14,22 +13,26 @@ func isMorseCode(s string) bool {
         return false
     }
 
-    // Простая проверка: если больше 50% символов - точки или тире
-    totalChars := len(trimmed)
-    dotsAndDashes := 0
+    // Используем strings.ContainsFunc как указано в ТЗ
+    // Проверяем, содержит ли строка символы, которые НЕ являются допустимыми для кода Морзе
+    if strings.ContainsFunc(trimmed, func(r rune) bool {
+        // Допустимые символы в коде Морзе: точка, тире, пробел, слэш
+        return !(r == '.' || r == '-' || r == ' ' || r == '/' || r == '\t' || r == '\n')
+    }) {
+        return false
+    }
     
+    // Также проверяем, что строка содержит хотя бы одну точку или тире
+    // (иначе строка из одних пробелов будет считаться кодом Морзе)
+    hasDotsOrDashes := false
     for _, r := range trimmed {
         if r == '.' || r == '-' {
-            dotsAndDashes++
+            hasDotsOrDashes = true
+            break
         }
     }
     
-    // Если более 30% символов - точки или тире, считаем что это код Морзе
-    if totalChars > 0 && float64(dotsAndDashes)/float64(totalChars) > 0.3 {
-        return true
-    }
-    
-    return false
+    return hasDotsOrDashes
 }
 
 // Convert автоматически определяет тип строки и конвертирует ее
