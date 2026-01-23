@@ -13,15 +13,31 @@ func isMorseCode(s string) bool {
         return false
     }
     
-    // Простая эвристика: если первый непробельный символ - точка или тире
+    // Проверяем наличие русских букв
     for _, r := range trimmed {
-        if r == ' ' || r == '\t' || r == '\n' {
-            continue
+        if (r >= 'а' && r <= 'я') || (r >= 'А' && r <= 'Я') {
+            return false // Русские буквы - это текст
         }
-        return r == '.' || r == '-'
     }
     
-    return false
+    // Проверяем наличие английских букв (латиницы)
+    for _, r := range trimmed {
+        if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+            return false // Латинские буквы - это текст
+        }
+    }
+    
+    // Если дошли сюда, проверяем на код Морзе
+    // Строка должна содержать точки или тире
+    hasDotsOrDashes := false
+    for _, r := range trimmed {
+        if r == '.' || r == '-' {
+            hasDotsOrDashes = true
+            break
+        }
+    }
+    
+    return hasDotsOrDashes
 }
 
 // Convert автоматически определяет тип строки и конвертирует ее
