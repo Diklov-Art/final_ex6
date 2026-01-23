@@ -1,10 +1,13 @@
 package service
 
 import (
+    "fmt"
     "strings"
     
     "github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 )
+
+var debug = false // можно включить для отладки
 
 // Определяет, является ли строка кодом Морзе
 func isMorseCode(s string) bool {
@@ -13,31 +16,28 @@ func isMorseCode(s string) bool {
         return false
     }
     
-    // Проверяем наличие русских букв
-    for _, r := range trimmed {
-        if (r >= 'а' && r <= 'я') || (r >= 'А' && r <= 'Я') {
-            return false // Русские буквы - это текст
+    if debug {
+        fmt.Printf("DEBUG isMorseCode: %q\n", trimmed)
+        if len(trimmed) > 100 {
+            fmt.Printf("First 100 chars: %q\n", trimmed[:100])
         }
     }
     
-    // Проверяем наличие английских букв (латиницы)
+    // Быстрая проверка: если начинается с точки или тире - вероятно код Морзе
     for _, r := range trimmed {
-        if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
-            return false // Латинские буквы - это текст
+        if r == ' ' || r == '\t' || r == '\n' {
+            continue
         }
-    }
-    
-    // Если дошли сюда, проверяем на код Морзе
-    // Строка должна содержать точки или тире
-    hasDotsOrDashes := false
-    for _, r := range trimmed {
         if r == '.' || r == '-' {
-            hasDotsOrDashes = true
-            break
+            if debug {
+                fmt.Printf("DEBUG: First non-space char is '.' or '-', returning true\n")
+            }
+            return true
         }
+        break
     }
     
-    return hasDotsOrDashes
+    return false
 }
 
 // Convert автоматически определяет тип строки и конвертирует ее
@@ -46,13 +46,23 @@ func Convert(input string) (string, error) {
         return "", nil
     }
 
+    if debug {
+        fmt.Printf("DEBUG Convert input: %q\n", input)
+    }
+    
     if isMorseCode(input) {
         // Конвертируем код Морзе в текст
         result := morse.ToText(input)
+        if debug {
+            fmt.Printf("DEBUG: Treated as morse, result: %q\n", result)
+        }
         return result, nil
     } else {
         // Конвертируем текст в код Морзе
         result := morse.ToMorse(input)
+        if debug {
+            fmt.Printf("DEBUG: Treated as text, result: %q\n", result)
+        }
         return result, nil
     }
 }
