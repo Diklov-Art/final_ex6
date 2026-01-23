@@ -6,36 +6,42 @@ import (
     "github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 )
 
+// Определяет, является ли строка кодом Морзе
+func isMorseCode(s string) bool {
+    trimmed := strings.TrimSpace(s)
+    if trimmed == "" {
+        return false
+    }
+    
+    // Ищем первую не-пробельную точку или тире
+    for i := 0; i < len(trimmed); i++ {
+        if trimmed[i] == '.' || trimmed[i] == '-' {
+            return true
+        }
+        if trimmed[i] != ' ' && trimmed[i] != '\t' && trimmed[i] != '\n' {
+            return false
+        }
+    }
+    
+    return false
+}
+
 // Convert автоматически определяет тип строки и конвертирует ее
 func Convert(input string) (string, error) {
     if input == "" {
         return "", nil
     }
 
-    // Очищаем входные данные
-    input = strings.TrimSpace(input)
+    // Убираем BOM если есть (иногда бывает в начале файлов)
+    input = strings.TrimPrefix(input, "\ufeff")
     
-    // Очень простая эвристика:
-    // Если строка содержит русские буквы - это текст
-    hasRussian := false
-    for _, r := range input {
-        if (r >= 'а' && r <= 'я') || (r >= 'А' && r <= 'Я') {
-            hasRussian = true
-            break
-        }
+    if isMorseCode(input) {
+        // Конвертируем код Морзе в текст
+        result := morse.ToText(input)
+        return result, nil
+    } else {
+        // Конвертируем текст в код Морзе
+        result := morse.ToMorse(input)
+        return result, nil
     }
-    
-    if hasRussian {
-        // Текст -> Морзе
-        return morse.ToMorse(input), nil
-    }
-    
-    // Иначе пробуем как код Морзе
-    result := morse.ToText(input)
-    if result == "" {
-        // Если не получилось декодировать, возможно это английский текст
-        return morse.ToMorse(input), nil
-    }
-    
-    return result, nil
 }
