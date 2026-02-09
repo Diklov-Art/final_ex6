@@ -1,25 +1,13 @@
 package service
 
 import (
+    "fmt"
     "strings"
+    
+    "github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 )
 
-// Создаем свою карту преобразования Морзе-Текст
-var morseToTextMap = map[string]string{
-    ".-":     "А",     "-...":   "Б",     ".--":    "В",     "--.":    "Г",
-    "-..":    "Д",     ".":      "Е",     "...-":   "Ж",     "--..":   "З",
-    "..":     "И",     ".---":   "Й",     "-.-":    "К",     ".-..":   "Л",
-    "--":     "М",     "-.":     "Н",     "---":    "О",     ".--.":   "П",  
-    ".-.":    "Р",     "...":    "С",     "-":      "Т",     "..-":    "У",
-    "..-.":   "Ф",     "....":   "Х",     "-.-.":   "Ц",     "---.":   "Ч",
-    "----":   "Ш",     "--.-":   "Щ",     "--.--":  "Ъ",     "-.--":   "Ы",
-    "-..-":   "Ь",     "..-..":  "Э",     "..--":   "Ю",     ".-.-":   "Я",
-    ".----":  "1",     "..---":  "2",     "...--":  "3",     "....-":  "4",
-    ".....":  "5",     "-....":  "6",     "--...":  "7",     "---..":  "8",
-    "----.":  "9",     "-----":  "0",     "/":      " ",     " ":      "",
-}
-
-
+// Convert автоматически определяет тип строки и конвертирует ее
 func Convert(input string) (string, error) {
     if input == "" {
         return "", nil
@@ -27,7 +15,13 @@ func Convert(input string) (string, error) {
 
     trimmed := strings.TrimSpace(input)
     
+    // Логирование для отладки
+    fmt.Printf("SERVICE DEBUG: Input: %q\n", trimmed)
+    if len(trimmed) > 50 {
+        fmt.Printf("SERVICE DEBUG: First 50 chars: %q\n", trimmed[:50])
+    }
     
+    // Проверяем, является ли строка кодом Морзе
     isMorse := true
     hasDotsOrDashes := false
     
@@ -40,60 +34,23 @@ func Convert(input string) (string, error) {
         }
     }
     
+    fmt.Printf("SERVICE DEBUG: isMorse: %v, hasDotsOrDashes: %v\n", isMorse, hasDotsOrDashes)
+    
     if isMorse && hasDotsOrDashes {
+        // Морзе -> Текст
+        result := morse.ToText(trimmed)
+        fmt.Printf("SERVICE DEBUG: morse.ToText result: %q\n", result)
         
-        return convertMorseToText(trimmed), nil
+        // Проверяем, что получили
+        if strings.Contains(trimmed, ".--.") {
+            fmt.Printf("SERVICE DEBUG: Input contains '.--.' (code for П)\n")
+        }
+        
+        return result, nil
     }
     
     
-    return convertTextToMorse(trimmed), nil
-}
-
-func convertMorseToText(morse string) string {
-    words := strings.Split(morse, " / ")
-    var result []string
-    
-    for _, word := range words {
-        letters := strings.Split(strings.TrimSpace(word), " ")
-        var wordText strings.Builder
-        
-        for _, letter := range letters {
-            if text, ok := morseToTextMap[letter]; ok {
-                wordText.WriteString(text)
-            }
-        }
-        
-        if wordText.Len() > 0 {
-            result = append(result, wordText.String())
-        }
-    }
-    
-    return strings.Join(result, " ")
-}
-
-func convertTextToMorse(text string) string {
-    text = strings.ToUpper(text)
-    var result []string
-    
-    for _, r := range text {
-        ch := string(r)
-        
-        morse := findMorseForRune(r)
-        if morse != "" {
-            result = append(result, morse)
-        } else if ch == " " {
-            result = append(result, "/")
-        }
-    }
-    
-    return strings.Join(result, " ")
-}
-
-func findMorseForRune(r rune) string {
-    for morse, text := range morseToTextMap {
-        if text == string(r) {
-            return morse
-        }
-    }
-    return ""
+    result := morse.ToMorse(trimmed)
+    fmt.Printf("SERVICE DEBUG: morse.ToMorse result: %q\n", result)
+    return result, nil
 }
