@@ -22,7 +22,7 @@ func Convert(input string) (string, error) {
         if r == '.' || r == '-' {
             hasDotsOrDashes = true
         } else if !(r == ' ' || r == '/' || r == '\t' || r == '\n') {
-            
+           
             isMorse = false
             break
         }
