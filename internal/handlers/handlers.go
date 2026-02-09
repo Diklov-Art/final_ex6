@@ -11,7 +11,7 @@ import (
     "github.com/Yandex-Practicum/go1fl-sprint6-final/internal/service"
 )
 
-// HomeHandler обрабатывает корневой эндпоинт и возвращает HTML из файла index.html
+/
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet {
         http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -23,57 +23,76 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Отправляем HTML файл
+    
     http.ServeFile(w, r, "index.html")
 }
 
-// UploadHandler обрабатывает загрузку файла
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodPost {
         http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
         return
     }
 
-    // 1. Парсить html-форму
-    err := r.ParseMultipartForm(10 << 20) // 10MB максимум
-    if err != nil {
-        http.Error(w, "Failed to parse form", http.StatusInternalServerError)
-        return
+    var content []byte
+    var filename string
+    var err error
+
+    
+    contentType := r.Header.Get("Content-Type")
+    
+    if strings.Contains(contentType, "multipart/form-data") {
+       
+        err = r.ParseMultipartForm(10 << 20) 
+        if err != nil {
+            http.Error(w, "Failed to parse form", http.StatusInternalServerError)
+            return
+        }
+
+       
+        file, header, err := r.FormFile("file")
+        if err != nil {
+            http.Error(w, "Failed to get file from form", http.StatusInternalServerError)
+            return
+        }
+        defer file.Close()
+
+       
+        content, err = io.ReadAll(file)
+        if err != nil {
+            http.Error(w, "Failed to read file", http.StatusInternalServerError)
+            return
+        }
+        
+        filename = header.Filename
+    } else {
+        
+        content, err = io.ReadAll(r.Body)
+        if err != nil {
+            http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+            return
+        }
+        defer r.Body.Close()
+        
+        filename = "input.txt" 
     }
 
-    // 2. Получить файл из формы
-    file, header, err := r.FormFile("file")
-    if err != nil {
-        http.Error(w, "Failed to get file from form", http.StatusInternalServerError)
-        return
-    }
-    defer file.Close()
-
-    // 3. Прочитать данные из файла
-    content, err := io.ReadAll(file)
-    if err != nil {
-        http.Error(w, "Failed to read file", http.StatusInternalServerError)
-        return
-    }
-
-    // 4. Передать эти данные в функцию автоопределения из пакета service
+    
     converted, err := service.Convert(string(content))
     if err != nil {
         http.Error(w, "Failed to convert content", http.StatusInternalServerError)
         return
     }
 
-    // 5. Создать локальный файл
-    // Используем time.Now().UTC().String() для генерации имени файла
+    
     timestamp := time.Now().UTC().String()
     
-    // Чтобы получить расширение файла, используйте filepath.Ext()
-    ext := filepath.Ext(header.Filename)
+    
+    ext := filepath.Ext(filename)
     if ext == "" {
         ext = ".txt"
     }
     
-    // Очищаем timestamp от недопустимых символов для имени файла
+    
     safeTimestamp := strings.ReplaceAll(strings.ReplaceAll(
         strings.ReplaceAll(timestamp, " ", "_"), 
         ":", "-"), 
@@ -81,7 +100,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
     
     outputFilename := "converted_" + safeTimestamp + ext
 
-    // 6. Записать в локальный файл результат конвертации строки
+    
     outputFile, err := os.Create(outputFilename)
     if err != nil {
         http.Error(w, "Failed to create output file", http.StatusInternalServerError)
@@ -95,7 +114,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // 7. Вернуть результат конвертации строки
+    
     w.Header().Set("Content-Type", "text/plain; charset=utf-8")
     w.WriteHeader(http.StatusOK)
     w.Write([]byte(converted))
