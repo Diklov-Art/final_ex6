@@ -11,7 +11,7 @@ import (
     "github.com/Yandex-Practicum/go1fl-sprint6-final/internal/service"
 )
 
-/
+
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet {
         http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -27,6 +27,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
     http.ServeFile(w, r, "index.html")
 }
 
+
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodPost {
         http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -34,49 +35,36 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     var content []byte
-    var filename string
     var err error
 
     
-    contentType := r.Header.Get("Content-Type")
+    content, err = io.ReadAll(r.Body)
+    if err != nil {
+        http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+        return
+    }
     
-    if strings.Contains(contentType, "multipart/form-data") {
-       
-        err = r.ParseMultipartForm(10 << 20) 
-        if err != nil {
-            http.Error(w, "Failed to parse form", http.StatusInternalServerError)
-            return
-        }
-
-       
-        file, header, err := r.FormFile("file")
-        if err != nil {
-            http.Error(w, "Failed to get file from form", http.StatusInternalServerError)
-            return
-        }
-        defer file.Close()
-
-       
-        content, err = io.ReadAll(file)
-        if err != nil {
-            http.Error(w, "Failed to read file", http.StatusInternalServerError)
-            return
-        }
+    
+    if len(content) == 0 {
         
-        filename = header.Filename
-    } else {
-        
-        content, err = io.ReadAll(r.Body)
-        if err != nil {
-            http.Error(w, "Failed to read request body", http.StatusInternalServerError)
-            return
+        if err := r.ParseMultipartForm(10 << 20); err == nil {
+            if file, _, err := r.FormFile("file"); err == nil {
+                defer file.Close()
+                content, err = io.ReadAll(file)
+                if err != nil {
+                    http.Error(w, "Failed to read file", http.StatusInternalServerError)
+                    return
+                }
+            }
         }
-        defer r.Body.Close()
-        
-        filename = "input.txt" 
+    }
+    
+    if len(content) == 0 {
+        http.Error(w, "Empty content", http.StatusBadRequest)
+        return
     }
 
-    
+   
     converted, err := service.Convert(string(content))
     if err != nil {
         http.Error(w, "Failed to convert content", http.StatusInternalServerError)
@@ -86,19 +74,13 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
     
     timestamp := time.Now().UTC().String()
     
-    
-    ext := filepath.Ext(filename)
-    if ext == "" {
-        ext = ".txt"
-    }
-    
-    
+   
     safeTimestamp := strings.ReplaceAll(strings.ReplaceAll(
         strings.ReplaceAll(timestamp, " ", "_"), 
         ":", "-"), 
         "+", "_")
     
-    outputFilename := "converted_" + safeTimestamp + ext
+    outputFilename := "converted_" + safeTimestamp + ".txt"
 
     
     outputFile, err := os.Create(outputFilename)
