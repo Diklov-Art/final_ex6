@@ -16,13 +16,13 @@ func main() {
     // Создаем логгер
     logger := log.New(os.Stdout, "MORSE-CONVERTER: ", log.Ldate|log.Ltime|log.Lshortfile)
     
-    // Создаем сервер с помощью вашей функции из пакета server
+    
     srv := server.New(logger)
     
-    // Запускаем его
+    
     go func() {
         if err := srv.Start(); err != nil && err != http.ErrServerClosed {
-            // Если при запуске сервера возникают ошибки, выведите её с помощью логгера на уровне Fatal
+            
             logger.Fatalf("Server failed to start: %v", err)
         }
     }()
