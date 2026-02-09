@@ -15,24 +15,24 @@ func Convert(input string) (string, error) {
     trimmed := strings.TrimSpace(input)
     
     
-    isMorse := true
-    hasDotsOrDashes := false
+    asText := morse.ToText(trimmed)
+    asMorse := morse.ToMorse(trimmed)
     
-    for _, r := range trimmed {
-        if r == '.' || r == '-' {
-            hasDotsOrDashes = true
-        } else if !(r == ' ' || r == '/' || r == '\t' || r == '\n') {
-           
-            isMorse = false
-            break
+    
+    if asText != "" && asText != trimmed {
+        hasRussian := false
+        for _, r := range asText {
+            if (r >= 'а' && r <= 'я') || (r >= 'А' && r <= 'Я') {
+                hasRussian = true
+                break
+            }
+        }
+        
+        if hasRussian {
+            return asText, nil
         }
     }
     
-    if isMorse && hasDotsOrDashes {
-        
-        return morse.ToText(trimmed), nil
-    }
     
-    
-    return morse.ToMorse(input), nil
+    return asMorse, nil
 }
