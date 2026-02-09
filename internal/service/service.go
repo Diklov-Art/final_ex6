@@ -12,13 +12,13 @@ func Convert(input string) (string, error) {
         return "", nil
     }
 
-    
+    // Определяем, является ли строка кодом Морзе
     if isMorseCode(input) {
         // Конвертируем код Морзе в текст
         result := morse.ToText(input)
         return result, nil
     } else {
-        
+        // Конвертируем текст в код Морзе
         result := morse.ToMorse(input)
         return result, nil
     }
@@ -32,21 +32,22 @@ func isMorseCode(s string) bool {
     }
 
     
-    if strings.ContainsFunc(trimmed, func(r rune) bool {
-        
-        return !(r == '.' || r == '-' || r == ' ' || r == '/' || r == '\t' || r == '\n')
-    }) {
-        return false
-    }
     
+    // Считаем количество точек и тире
+    dotsAndDashes := 0
+    otherAllowedChars := 0 // пробелы, слэши
     
-    hasDotsOrDashes := false
     for _, r := range trimmed {
         if r == '.' || r == '-' {
-            hasDotsOrDashes = true
-            break
+            dotsAndDashes++
+        } else if r == ' ' || r == '/' || r == '\t' || r == '\n' {
+            otherAllowedChars++
+        } else {
+            // Нашли символ, который недопустим в коде Морзе
+            return false
         }
     }
     
-    return hasDotsOrDashes
+    
+    return dotsAndDashes > 0
 }
